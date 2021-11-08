@@ -99,6 +99,7 @@ _MOTCHALLENGE_STEP = 'motchallenge_step'
 _CITYSCAPES_DVPS = 'cityscapes_dvps'
 _SEMKITTI_DVPS = 'semkitti_dvps'
 _COCO_PANOPTIC = 'coco_panoptic'
+_SORGHUM_SYNTHETIC = 'sorghum_synthetic'
 
 # Colormap names.
 _CITYSCAPES_COLORMAP = 'cityscapes'
@@ -231,6 +232,23 @@ COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
     ignore_depth=None,
 )
 
+SORGHUM_INFORMATION = DatasetDescriptor(
+    dataset_name=_SORGHUM_SYNTHETIC,
+    splits_to_sizes={'train' : 1000,
+                     'val' : 100,
+                      'test' : 100},
+    num_classes=3,
+    ignore_label=255,
+    panoptic_label_divisor=1000,
+    class_has_instances_list = [],
+    is_video_dataset=False,
+    colormap=_COCO_COLORMAP,
+    is_depth_dataset=False,
+    ignore_depth=None,
+)
+
+
+
 MAP_NAME_TO_DATASET_INFO = {
     _CITYSCAPES_PANOPTIC: CITYSCAPES_PANOPTIC_INFORMATION,
     _KITTI_STEP: KITTI_STEP_INFORMATION,
@@ -238,6 +256,7 @@ MAP_NAME_TO_DATASET_INFO = {
     _CITYSCAPES_DVPS: CITYSCAPES_DVPS_INFORMATION,
     _COCO_PANOPTIC: COCO_PANOPTIC_INFORMATION,
     _SEMKITTI_DVPS: SEMKITTI_DVPS_INFORMATION,
+    _SORGHUM_SYNTHETIC: SORGHUM_INFORMATION
 }
 
 MAP_NAMES = list(MAP_NAME_TO_DATASET_INFO.keys())
