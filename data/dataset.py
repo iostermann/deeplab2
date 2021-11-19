@@ -234,19 +234,18 @@ COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
 
 SORGHUM_INFORMATION = DatasetDescriptor(
     dataset_name=_SORGHUM_SYNTHETIC,
-    splits_to_sizes={'train' : 1000,
-                     'val' : 100,
-                      'test' : 100},
+    splits_to_sizes={'train': 468,
+                     'val': 195,
+                     'test': 117},
     num_classes=3,
     ignore_label=255,
     panoptic_label_divisor=1000,
-    class_has_instances_list = [],
+    class_has_instances_list=tuple(range(1, 2)),
     is_video_dataset=False,
     colormap=_COCO_COLORMAP,
     is_depth_dataset=False,
     ignore_depth=None,
 )
-
 
 
 MAP_NAME_TO_DATASET_INFO = {

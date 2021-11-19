@@ -32,6 +32,8 @@ from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
+from skimage import data, filters, color, morphology
+from skimage.segmentation import flood, flood_fill
 
 from deeplab2.data import coco_constants
 from deeplab2.data import data_utils
@@ -54,20 +56,20 @@ _SPLITS_TO_SIZES = dataset.SORGHUM_INFORMATION.splits_to_sizes
 _IGNORE_LABEL = dataset.SORGHUM_INFORMATION.ignore_label
 _CLASS_HAS_INSTANCE_LIST = dataset.SORGHUM_INFORMATION.class_has_instances_list
 _PANOPTIC_LABEL_DIVISOR = dataset.SORGHUM_INFORMATION.panoptic_label_divisor
-_CLASS_MAPPING = coco_constants.get_id_mapping()
+#_CLASS_MAPPING = coco_constants.get_id_mapping()
 
 # A map from data type to folder name that saves the data.
 _FOLDERS_MAP = {
     'train': {
-        'image': 'train2017',
+        'image': 'train',
         'label': 'annotations',
     },
     'val': {
-        'image': 'val2017',
+        'image': 'val',
         'label': 'annotations',
     },
     'test': {
-        'image': 'test2017',
+        'image': 'test',
         'label': '',
     }
 }
@@ -99,7 +101,7 @@ def _get_images(sorghum_root: str, dataset_split: str) -> Sequence[str]:
 
 def _get_panoptic_annotation(sorghum_root: str, dataset_split: str,
                              annotation_file_name: str) -> str:
-    panoptic_folder = 'panoptic_%s2017' % dataset_split
+    panoptic_folder = 'panoptic_%s' % dataset_split
     return os.path.join(sorghum_root, _FOLDERS_MAP[dataset_split]['label'],
                         panoptic_folder, annotation_file_name)
 
@@ -121,7 +123,7 @@ def _read_segments(coco_root: str, dataset_split: str):
     """
     json_filename = os.path.join(
         coco_root, _FOLDERS_MAP[dataset_split]['label'],
-        'panoptic_%s2017.json' % dataset_split)
+        'panoptic_%s.json' % dataset_split)
     with tf.io.gfile.GFile(json_filename) as f:
         panoptic_dataset = json.load(f)
 
@@ -145,7 +147,7 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     Args:
       panoptic_annotation_file: String, path to panoptic annotation.
       segments: A list of dictionaries containing information of every segment.
-        Read from panoptic_${DATASET_SPLIT}2017.json. This method consumes
+        Read from panoptic_${DATASET_SPLIT}.json. This method consumes
         the following fields in each dictionary:
           - id: panoptic id
           - category_id: semantic class id
@@ -165,6 +167,34 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
                          panoptic_label.mode)
 
     panoptic_label = np.array(panoptic_label, dtype=np.int32)
+
+
+
+
+    # Save the white background because flood filling kills it?
+    unfiltered_panoptic = np.dot(panoptic_label, [1, 256, 256 * 256])
+    background_pixels = unfiltered_panoptic == np.dot([255, 255, 255], [1, 256, 256 * 256])
+    stem_pixels = unfiltered_panoptic == np.dot([0, 0, 0], [1, 256, 256*256])
+
+    unique, indices, counts = np.unique(panoptic_label.reshape(-1, panoptic_label.shape[2]), return_counts=True, return_index=True, axis=0)
+
+    img_hsv = color.rgb2hsv(panoptic_label)
+    # Run flood fill on every unique color in hopes to reduce down to very few total colors
+    for index in indices:
+        y = index % 1024
+        x = int(index / 1024)
+
+        mask = flood(img_hsv[..., 0], (x, y), tolerance=0.001)
+        panoptic_label[mask] = panoptic_label[x][y]
+
+    unique, indices, counts = np.unique(panoptic_label.reshape(-1, panoptic_label.shape[2]), return_counts=True, return_index=True, axis=0)
+
+    instance_mapping = dict()
+    instance_counter = 0
+    for uniqueColor in unique:
+        instance_mapping[np.dot(uniqueColor, [1, 256, 256*256])] = instance_counter
+        instance_counter += 1
+
     # COCO panoptic map is created by:
     #   color = [segmentId % 256, segmentId // 256, segmentId // 256 // 256]
     panoptic_label = np.dot(panoptic_label, [1, 256, 256 * 256])
@@ -174,6 +204,27 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     # Running count of instances per semantic category.
     instance_count = collections.defaultdict(int)
 
+    label_mapping = {
+        'background': 0,
+        'leaf': 1,
+        'stem': 2,
+    }
+
+    # Set all the background pixels
+    semantic_label[background_pixels] = label_mapping['background']
+
+    # Set all the stem pixels
+    semantic_label[stem_pixels] = label_mapping['stem']
+
+    # Set everything else to a leaf
+    selected_pixels = (unfiltered_panoptic != np.dot([255, 255, 255], [1, 256, 256*256])) & (unfiltered_panoptic != np.dot([0, 0, 0], [1, 256, 256*256]))
+    semantic_label[selected_pixels] = label_mapping['leaf']
+
+    # Set the instance labels
+    u, inv = np.unique(panoptic_label, return_inverse=True)
+    instance_label = np.array([instance_mapping[x] for x in u])[inv].reshape(panoptic_label.shape)
+
+    '''
     for segment in segments:
         selected_pixels = panoptic_label == segment['id']
         pixel_area = np.sum(selected_pixels)
@@ -184,7 +235,7 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
         category_id = segment['category_id']
 
         # Map the category_id to contiguous ids
-        category_id = _CLASS_MAPPING[category_id]
+        #category_id = _CLASS_MAPPING[category_id]
 
         semantic_label[selected_pixels] = category_id
 
@@ -202,12 +253,13 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
             instance_label[selected_pixels] = instance_count[category_id]
         elif segment['iscrowd']:
             raise ValueError('Stuff class should not have `iscrowd` label.')
+    '''
 
     panoptic_label = semantic_label * _PANOPTIC_LABEL_DIVISOR + instance_label
     return panoptic_label.astype(np.int32)
 
 
-def _create_panoptic_label(coco_root: str, dataset_split: str, image_path: str,
+def _create_panoptic_label(sorghum_root: str, dataset_split: str, image_path: str,
                            segments_dict: Any
                            ) -> Tuple[str, str]:
     """Creates labels for panoptic segmentation.
@@ -217,7 +269,7 @@ def _create_panoptic_label(coco_root: str, dataset_split: str, image_path: str,
       dataset_split: String, dataset split ('train', 'val', 'test').
       image_path: String, path to the image file.
       segments_dict:
-        Read from panoptic_${DATASET_SPLIT}2017.json. This method consumes
+        Read from panoptic_${DATASET_SPLIT}.json. This method consumes
         the following fields in each dictionary:
           - id: panoptic id
           - category_id: semantic class id
@@ -235,17 +287,18 @@ def _create_panoptic_label(coco_root: str, dataset_split: str, image_path: str,
     path_list = image_path.split(os.sep)
     file_name = path_list[-1]
 
-    annotation_file_name, segments = segments_dict[
-        os.path.splitext(file_name)[-2]]
-    panoptic_annotation_file = _get_panoptic_annotation(coco_root,
+    # annotation_file_name, segments = segments_dict[
+    #    os.path.splitext(file_name)[-2]]
+    annotation_file_name = file_name.replace('image', 'mask', 1)
+    panoptic_annotation_file = _get_panoptic_annotation(sorghum_root,
                                                         dataset_split,
                                                         annotation_file_name)
 
-    panoptic_label = _generate_panoptic_label(panoptic_annotation_file, segments)
+    panoptic_label = _generate_panoptic_label(panoptic_annotation_file, None)
     return panoptic_label.tostring(), _PANOPTIC_LABEL_FORMAT
 
 
-def _convert_dataset(coco_root: str, dataset_split: str,
+def _convert_dataset(sorghum_root: str, dataset_split: str,
                      output_dir: str) -> None:
     """Converts the specified dataset split to TFRecord format.
 
@@ -254,12 +307,12 @@ def _convert_dataset(coco_root: str, dataset_split: str,
       dataset_split: String, the dataset split (one of `train`, `val` and `test`).
       output_dir: String, directory to write output TFRecords to.
     """
-    image_files = _get_images(coco_root, dataset_split)
+    image_files = _get_images(sorghum_root, dataset_split)
 
     num_images = len(image_files)
 
-    if dataset_split != 'test':
-        segments_dict = _read_segments(coco_root, dataset_split)
+    #if dataset_split != 'test':
+    #    segments_dict = _read_segments(coco_root, dataset_split)
 
     num_per_shard = int(math.ceil(len(image_files) / _NUM_SHARDS))
 
@@ -279,7 +332,7 @@ def _convert_dataset(coco_root: str, dataset_split: str,
                     label_data, label_format = None, None
                 else:
                     label_data, label_format = _create_panoptic_label(
-                        coco_root, dataset_split, image_files[i], segments_dict)
+                        sorghum_root, dataset_split, image_files[i], None)
 
                 # Convert to tf example.
                 image_path = os.path.normpath(image_files[i])
@@ -287,7 +340,7 @@ def _convert_dataset(coco_root: str, dataset_split: str,
                 file_name = path_list[-1]
                 file_prefix = os.path.splitext(file_name)[0]
                 example = data_utils.create_tfexample(image_data,
-                                                      'jpeg',
+                                                      'png',
                                                       file_prefix, label_data,
                                                       label_format)
 
@@ -299,9 +352,9 @@ def main(unused_argv: Sequence[str]) -> None:
 
     for dataset_split in ('train', 'val', 'test'):
         logging.info('Starts processing dataset split %s.', dataset_split)
-        _convert_dataset(FLAGS.coco_root, dataset_split, FLAGS.output_dir)
+        _convert_dataset(FLAGS.sorghum_root, dataset_split, FLAGS.output_dir)
 
 
 if __name__ == '__main__':
-    flags.mark_flags_as_required(['coco_root', 'output_dir'])
+    flags.mark_flags_as_required(['sorghum_root', 'output_dir'])
     app.run(main)
