@@ -52,6 +52,8 @@ flags.DEFINE_string('output_dir', None,
 
 _NUM_SHARDS = 10
 
+_IMAGE_COUNTER = 0
+
 _SPLITS_TO_SIZES = dataset.SORGHUM_INFORMATION.splits_to_sizes
 _IGNORE_LABEL = dataset.SORGHUM_INFORMATION.ignore_label
 _CLASS_HAS_INSTANCE_LIST = dataset.SORGHUM_INFORMATION.class_has_instances_list
@@ -162,6 +164,10 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     with tf.io.gfile.GFile(panoptic_annotation_file, 'rb') as f:
         panoptic_label = data_utils.read_image(f.read())
 
+    global _IMAGE_COUNTER
+    print("Processing image: ", _IMAGE_COUNTER)
+    _IMAGE_COUNTER += 1
+
     if panoptic_label.mode != 'RGB':
         raise ValueError('Expect RGB image for panoptic label, gets %s' %
                          panoptic_label.mode)
@@ -181,8 +187,8 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     img_hsv = color.rgb2hsv(panoptic_label)
     # Run flood fill on every unique color in hopes to reduce down to very few total colors
     for index in indices:
-        y = index % 1024
-        x = int(index / 1024)
+        y = index % 256
+        x = int(index / 256)
 
         mask = flood(img_hsv[..., 0], (x, y), tolerance=0.001)
         panoptic_label[mask] = panoptic_label[x][y]
@@ -351,6 +357,8 @@ def main(unused_argv: Sequence[str]) -> None:
     tf.io.gfile.makedirs(FLAGS.output_dir)
 
     for dataset_split in ('train', 'val', 'test'):
+        global _IMAGE_COUNTER
+        _IMAGE_COUNTER = 0
         logging.info('Starts processing dataset split %s.', dataset_split)
         _convert_dataset(FLAGS.sorghum_root, dataset_split, FLAGS.output_dir)
 

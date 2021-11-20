@@ -234,9 +234,9 @@ COCO_PANOPTIC_INFORMATION = DatasetDescriptor(
 
 SORGHUM_INFORMATION = DatasetDescriptor(
     dataset_name=_SORGHUM_SYNTHETIC,
-    splits_to_sizes={'train': 468,
-                     'val': 195,
-                     'test': 117},
+    splits_to_sizes={'train': 7200,
+                     'val': 900,
+                     'test': 900},
     num_classes=3,
     ignore_label=255,
     panoptic_label_divisor=1000,
