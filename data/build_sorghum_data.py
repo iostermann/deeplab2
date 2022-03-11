@@ -35,6 +35,8 @@ import tensorflow as tf
 from skimage import data, filters, color, morphology
 from skimage.segmentation import flood, flood_fill
 
+import io
+
 from deeplab2.data import coco_constants
 from deeplab2.data import data_utils
 from deeplab2.data import dataset
@@ -50,7 +52,8 @@ flags.DEFINE_string('output_dir', None,
 #                     'Whether to apply ignore labels to crowd pixels in '
 #                     'panoptic label.')
 
-_NUM_SHARDS = 10
+#_NUM_SHARDS = 40
+_NUM_SHARDS = 2
 
 _IMAGE_COUNTER = 0
 
@@ -184,17 +187,6 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
 
     unique, indices, counts = np.unique(panoptic_label.reshape(-1, panoptic_label.shape[2]), return_counts=True, return_index=True, axis=0)
 
-    img_hsv = color.rgb2hsv(panoptic_label)
-    # Run flood fill on every unique color in hopes to reduce down to very few total colors
-    for index in indices:
-        y = index % 256
-        x = int(index / 256)
-
-        mask = flood(img_hsv[..., 0], (x, y), tolerance=0.001)
-        panoptic_label[mask] = panoptic_label[x][y]
-
-    unique, indices, counts = np.unique(panoptic_label.reshape(-1, panoptic_label.shape[2]), return_counts=True, return_index=True, axis=0)
-
     instance_mapping = dict()
     instance_counter = 0
     for uniqueColor in unique:
@@ -296,6 +288,7 @@ def _create_panoptic_label(sorghum_root: str, dataset_split: str, image_path: st
     # annotation_file_name, segments = segments_dict[
     #    os.path.splitext(file_name)[-2]]
     annotation_file_name = file_name.replace('image', 'mask', 1)
+    annotation_file_name = annotation_file_name.replace(_DATA_FORMAT_MAP['image'], _DATA_FORMAT_MAP['label'], 1)
     panoptic_annotation_file = _get_panoptic_annotation(sorghum_root,
                                                         dataset_split,
                                                         annotation_file_name)
@@ -332,7 +325,11 @@ def _convert_dataset(sorghum_root: str, dataset_split: str,
             for i in range(start_idx, end_idx):
                 # Read the image.
                 with tf.io.gfile.GFile(image_files[i], 'rb') as f:
-                    image_data = f.read()
+                    image_data = data_utils.read_image(f.read())
+                    byteIO = io.BytesIO()
+                    image_data.save(byteIO, format='PNG')
+                    #image_data = f.read()
+                    image_data = byteIO.getvalue()
 
                 if dataset_split == 'test':
                     label_data, label_format = None, None

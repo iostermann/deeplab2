@@ -170,7 +170,7 @@ def overlay_heatmap_on_image(heatmap,
       figsize=(image_width / dpi, image_height / dpi),
       dpi=dpi)
   grid_y, grid_x = np.mgrid[0:image_height, 0:image_width]
-  cb = ax.contourf(grid_x, grid_y, heatmap, 10, cmap=cmap)
+  cb = ax.contourf(grid_x, grid_y, heatmap, 4, cmap=cmap)
   ax.imshow(image)
   ax.grid(False)
   plt.axis('off')

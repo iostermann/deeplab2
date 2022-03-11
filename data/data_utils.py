@@ -18,6 +18,7 @@
 import collections
 import io
 
+import PIL.Image
 import numpy as np
 from PIL import Image
 from PIL import ImageOps
@@ -46,6 +47,7 @@ def read_image(image_data):
     # https://github.com/python-pillow/Pillow/issues/3973
     pass
 
+  image = image.resize((256, 256), resample=PIL.Image.NEAREST)
   return image
 
 
