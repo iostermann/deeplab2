@@ -48,6 +48,7 @@ _CITYSCAPES_TRAIN_ID_TO_EVAL_ID = (
 )
 _COCO_TRAIN_ID_TO_EVAL_ID = coco_constants.get_id_mapping_inverse()
 
+_SORGHUM_TRAIN_ID_TO_EVAL_ID = (0, 1, 2)
 
 def _convert_train_id_to_eval_id(
     prediction: np.ndarray, dataset_name: str) -> np.ndarray:
@@ -71,6 +72,8 @@ def _convert_train_id_to_eval_id(
     train_id_to_eval_id = _CITYSCAPES_TRAIN_ID_TO_EVAL_ID
   elif 'coco' in dataset_name:
     train_id_to_eval_id = _COCO_TRAIN_ID_TO_EVAL_ID
+  elif 'sorghum' in dataset_name:
+    train_id_to_eval_id = _SORGHUM_TRAIN_ID_TO_EVAL_ID
   else:
     raise ValueError(
         'Unsupported dataset %s for converting semantic class IDs.' %

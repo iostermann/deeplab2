@@ -32,8 +32,6 @@ from absl import flags
 from absl import logging
 import numpy as np
 import tensorflow as tf
-from skimage import data, filters, color, morphology
-from skimage.segmentation import flood, flood_fill
 
 import io
 
@@ -52,8 +50,8 @@ flags.DEFINE_string('output_dir', None,
 #                     'Whether to apply ignore labels to crowd pixels in '
 #                     'panoptic label.')
 
-#_NUM_SHARDS = 40
-_NUM_SHARDS = 2
+_NUM_SHARDS = 100
+#_NUM_SHARDS = 2
 
 _IMAGE_COUNTER = 0
 
@@ -165,7 +163,7 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
       g3doc/setup/coco.md for more details about how panoptic ID is assigned.
     """
     with tf.io.gfile.GFile(panoptic_annotation_file, 'rb') as f:
-        panoptic_label = data_utils.read_image(f.read())
+        panoptic_label = data_utils.read_mask(f.read())
 
     global _IMAGE_COUNTER
     print("Processing image: ", _IMAGE_COUNTER)
@@ -188,7 +186,8 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     unique, indices, counts = np.unique(panoptic_label.reshape(-1, panoptic_label.shape[2]), return_counts=True, return_index=True, axis=0)
 
     instance_mapping = dict()
-    instance_counter = 0
+    instance_counter = 1  # Model has to be trained on this...... wow I'm dum
+    # instance_counter = 0
     for uniqueColor in unique:
         instance_mapping[np.dot(uniqueColor, [1, 256, 256*256])] = instance_counter
         instance_counter += 1

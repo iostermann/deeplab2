@@ -47,6 +47,27 @@ def read_image(image_data):
     # https://github.com/python-pillow/Pillow/issues/3973
     pass
 
+  image = image.resize((256, 256), resample=PIL.Image.LANCZOS)
+  return image
+
+def read_mask(image_data):
+  """Decodes image from in-memory data.
+
+  Args:
+    image_data: Bytes data representing encoded image.
+
+  Returns:
+    Decoded PIL.Image object.
+  """
+  image = Image.open(io.BytesIO(image_data))
+
+  try:
+    image = ImageOps.exif_transpose(image)
+  except TypeError:
+    # capture and ignore this bug:
+    # https://github.com/python-pillow/Pillow/issues/3973
+    pass
+
   image = image.resize((256, 256), resample=PIL.Image.NEAREST)
   return image
 
