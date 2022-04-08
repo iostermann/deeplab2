@@ -50,8 +50,8 @@ flags.DEFINE_string('output_dir', None,
 #                     'Whether to apply ignore labels to crowd pixels in '
 #                     'panoptic label.')
 
-_NUM_SHARDS = 100
-#_NUM_SHARDS = 2
+#_NUM_SHARDS = 100
+_NUM_SHARDS = 2
 
 _IMAGE_COUNTER = 0
 
@@ -176,9 +176,6 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     panoptic_label = np.array(panoptic_label, dtype=np.int32)
 
 
-
-
-    # Save the white background because flood filling kills it?
     unfiltered_panoptic = np.dot(panoptic_label, [1, 256, 256 * 256])
     background_pixels = unfiltered_panoptic == np.dot([255, 255, 255], [1, 256, 256 * 256])
     stem_pixels = unfiltered_panoptic == np.dot([0, 0, 0], [1, 256, 256*256])
@@ -188,7 +185,13 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     instance_mapping = dict()
     instance_counter = 1  # Model has to be trained on this...... wow I'm dum
     # instance_counter = 0
+    # Set the instance mapping color for the stem and background
+    instance_mapping[np.dot([0, 0, 0], [1, 256, 256 * 256])] = 0
+    instance_mapping[np.dot([255, 255, 255], [1, 256, 256 * 256])] = 0
+
     for uniqueColor in unique:
+        if (np.dot(uniqueColor, [1, 256, 256*256]) == np.dot([0, 0, 0], [1, 256, 256*256])) or (np.dot(uniqueColor, [1, 256, 256*256]) == np.dot([255, 255, 255], [1, 256, 256*256])):
+            continue
         instance_mapping[np.dot(uniqueColor, [1, 256, 256*256])] = instance_counter
         instance_counter += 1
 
@@ -205,6 +208,7 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
         'background': 0,
         'leaf': 1,
         'stem': 2,
+        'ignore': 3,
     }
 
     # Set all the background pixels
