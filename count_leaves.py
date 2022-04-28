@@ -88,7 +88,7 @@ def main(_):
     # We have images of plants numbered 5000-5099
     side_list = None
     with parallel_backend('multiprocessing'):
-        side_list = Parallel(n_jobs=16)(delayed(process_side_rotations_images)(i) for i in range(5000, 5100))
+        side_list = Parallel(n_jobs=16)(delayed(process_side_rotations)(i) for i in range(5000, 5100))
         x = 5000
         for count in side_list:
             print("\tAverage leaf count for plant", x, "over rotation:", count)
@@ -98,7 +98,7 @@ def main(_):
     # We have images of plants numbered 5000-5099
     top_list = None
     with parallel_backend('multiprocessing'):
-        top_list = Parallel(n_jobs=16)(delayed(process_top_rotations_images)(i) for i in range(5000, 5100))
+        top_list = Parallel(n_jobs=16)(delayed(process_top_rotations)(i) for i in range(5000, 5100))
         x = 5000
         for count in top_list:
             print("\tAverage leaf count for plant", x, "over rotation:", count)

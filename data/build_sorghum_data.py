@@ -50,8 +50,8 @@ flags.DEFINE_string('output_dir', None,
 #                     'Whether to apply ignore labels to crowd pixels in '
 #                     'panoptic label.')
 
-#_NUM_SHARDS = 100
-_NUM_SHARDS = 2
+_NUM_SHARDS = 50
+#_NUM_SHARDS = 2
 
 _IMAGE_COUNTER = 0
 
@@ -179,20 +179,25 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     unfiltered_panoptic = np.dot(panoptic_label, [1, 256, 256 * 256])
     background_pixels = unfiltered_panoptic == np.dot([255, 255, 255], [1, 256, 256 * 256])
     stem_pixels = unfiltered_panoptic == np.dot([0, 0, 0], [1, 256, 256*256])
+    panicle_pixels = unfiltered_panoptic == np.dot([164, 41, 41], [1, 256, 256*256])
 
     unique, indices, counts = np.unique(panoptic_label.reshape(-1, panoptic_label.shape[2]), return_counts=True, return_index=True, axis=0)
 
     instance_mapping = dict()
     instance_counter = 1  # Model has to be trained on this...... wow I'm dum
-    # instance_counter = 0
-    # Set the instance mapping color for the stem and background
+    # Set the instance mapping color for the stem and background and panicle
     instance_mapping[np.dot([0, 0, 0], [1, 256, 256 * 256])] = 0
     instance_mapping[np.dot([255, 255, 255], [1, 256, 256 * 256])] = 0
+    instance_mapping[np.dot([164, 41, 41], [1, 256, 256 * 256])] = 0
 
     for uniqueColor in unique:
-        if (np.dot(uniqueColor, [1, 256, 256*256]) == np.dot([0, 0, 0], [1, 256, 256*256])) or (np.dot(uniqueColor, [1, 256, 256*256]) == np.dot([255, 255, 255], [1, 256, 256*256])):
+        uniqueColorPanopticLabel = np.dot(uniqueColor, [1, 256, 256*256])
+        if \
+                (uniqueColorPanopticLabel == np.dot([0, 0, 0], [1, 256, 256*256])) or \
+                (uniqueColorPanopticLabel == np.dot([255, 255, 255], [1, 256, 256*256])) or \
+                (uniqueColorPanopticLabel == np.dot([164, 41, 41], [1, 256, 256*256])):
             continue
-        instance_mapping[np.dot(uniqueColor, [1, 256, 256*256])] = instance_counter
+        instance_mapping[uniqueColorPanopticLabel] = instance_counter
         instance_counter += 1
 
     # COCO panoptic map is created by:
@@ -208,7 +213,8 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
         'background': 0,
         'leaf': 1,
         'stem': 2,
-        'ignore': 3,
+        'panicle': 3,
+        'ignore': 4,
     }
 
     # Set all the background pixels
@@ -218,7 +224,9 @@ def _generate_panoptic_label(panoptic_annotation_file: str, segments: Any) -> np
     semantic_label[stem_pixels] = label_mapping['stem']
 
     # Set everything else to a leaf
-    selected_pixels = (unfiltered_panoptic != np.dot([255, 255, 255], [1, 256, 256*256])) & (unfiltered_panoptic != np.dot([0, 0, 0], [1, 256, 256*256]))
+    selected_pixels = (unfiltered_panoptic != np.dot([255, 255, 255], [1, 256, 256*256])) & \
+                      (unfiltered_panoptic != np.dot([0, 0, 0], [1, 256, 256*256])) & \
+                      (unfiltered_panoptic != np.dot([164, 41, 41], [1, 256, 256*256]))
     semantic_label[selected_pixels] = label_mapping['leaf']
 
     # Set the instance labels
