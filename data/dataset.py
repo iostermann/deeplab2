@@ -242,7 +242,7 @@ SORGHUM_INFORMATION = DatasetDescriptor(
     panoptic_label_divisor=1000,
     class_has_instances_list=tuple(range(1, 2)),
     is_video_dataset=False,
-    colormap=_COCO_COLORMAP,
+    colormap=COCO_COLORMAP,
     is_depth_dataset=False,
     ignore_depth=None,
 )
