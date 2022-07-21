@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 The Deeplab2 Authors.
+# Copyright 2022 The Deeplab2 Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -210,3 +210,9 @@ class MotionDeepLab(tf.keras.Model):
     items = dict(encoder=self._encoder)
     items.update(self._decoder.checkpoint_items)
     return items
+
+  @property
+  def auxiliary_output_number(self) -> int:
+    # auxiliary_output_number is only supported in K-MaX meta, thus we hard
+    # code it to 0 here.
+    return 0

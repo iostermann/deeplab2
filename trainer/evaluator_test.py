@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 The Deeplab2 Authors.
+# Copyright 2022 The Deeplab2 Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ def _create_panoptic_deeplab_loss(dataset_info):
 
   loss_layer = loss_builder.DeepLabFamilyLoss(
       loss_options,
+      deeplab_options=config_pb2.ModelOptions(),
       num_classes=dataset_info.num_classes,
       ignore_label=dataset_info.ignore_label,
       ignore_depth=dataset_info.ignore_depth,
@@ -91,6 +92,7 @@ def _create_max_deeplab_loss(dataset_info):
       instance_discrimination_loss=instance_discrimination_loss_options)
   loss_layer = loss_builder.DeepLabFamilyLoss(
       loss_options,
+      deeplab_options=config_pb2.ModelOptions(),
       num_classes=dataset_info.num_classes,
       ignore_label=dataset_info.ignore_label,
       ignore_depth=dataset_info.ignore_depth,
@@ -208,6 +210,7 @@ class RealDataEvaluatorTest(tf.test.TestCase):
         'evaluation/pq/TP',
         'evaluation/pq/FN',
         'evaluation/pq/FP',
+        'evaluation/ap/AP_Mask',
     }
     self.assertCountEqual(result.keys(), expected_metric_keys)
     self.assertSequenceEqual(result['losses/eval_total_loss'].shape, ())
