@@ -50,7 +50,7 @@ flags.DEFINE_string('output_dir', None,
 #                     'Whether to apply ignore labels to crowd pixels in '
 #                     'panoptic label.')
 
-_NUM_SHARDS = 50
+_NUM_SHARDS = 10
 #_NUM_SHARDS = 2
 
 _IMAGE_COUNTER = 0
