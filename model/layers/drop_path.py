@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 The Deeplab2 Authors.
+# Copyright 2022 The Deeplab2 Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,12 +117,13 @@ class DropPath(tf.keras.layers.Layer):
     Returns:
       The output tensor.
     """
-    if self._drop_path_keep_prob == 1.0 or not training:
-      return input_tensor
-    drop_path_random_mask = generate_drop_path_random_mask(
-        input_tensor, self._drop_path_keep_prob)
-    if drop_path_random_mask is not None:
-      input_tensor = input_tensor * drop_path_random_mask
+    if training:
+      keep_prob = self._drop_path_keep_prob
+      shape = (tf.shape(input_tensor)[0],) + (1,) * (
+          len(tf.shape(input_tensor)) - 1)
+      random_tensor = keep_prob + tf.random.uniform(shape, 0, 1)
+      random_tensor = tf.floor(random_tensor)
+      return (input_tensor / keep_prob) * random_tensor
     return input_tensor
 
   def get_config(self):

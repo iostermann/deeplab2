@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 The Deeplab2 Authors.
+# Copyright 2022 The Deeplab2 Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import numpy as np
 import tensorflow as tf
 
 from deeplab2 import common
+from deeplab2 import config_pb2
 from deeplab2 import trainer_pb2
 from deeplab2.model.loss import loss_builder as loss
 
@@ -44,6 +45,7 @@ class LossTest(tf.test.TestCase):
 
     loss_layer = loss.DeepLabFamilyLoss(
         loss_options,
+        deeplab_options=config_pb2.ModelOptions(),
         num_classes=num_classes,
         ignore_label=ignore_label,
         ignore_depth=ignore_depth,
@@ -174,6 +176,7 @@ class LossTest(tf.test.TestCase):
 
     loss_layer = loss.DeepLabFamilyLoss(
         loss_options,
+        deeplab_options=config_pb2.ModelOptions(),
         num_classes=num_classes,
         ignore_label=ignore_label,
         ignore_depth=ignore_depth,
@@ -219,6 +222,7 @@ class LossTest(tf.test.TestCase):
 
     with self.assertRaises(ValueError):
       _ = loss.DeepLabFamilyLoss(loss_options,
+                                 deeplab_options=config_pb2.ModelOptions(),
                                  num_classes=19,
                                  ignore_label=255,
                                  ignore_depth=0,

@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2021 The Deeplab2 Authors.
+# Copyright 2022 The Deeplab2 Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ class AxialBlocksTest(tf.test.TestCase):
         strides=2)
     float_training_tensor = tf.constant(0.0, dtype=tf.float32)
     output = layer((tf.zeros([2, 65, 65, 32]),
-                    float_training_tensor))[1]
+                    float_training_tensor))
     self.assertListEqual(output.get_shape().as_list(), [2, 33, 33, 256])
 
   def test_conv_bottleneck_block_correct_output_shape(self):
@@ -37,7 +37,7 @@ class AxialBlocksTest(tf.test.TestCase):
         strides=1)
     float_training_tensor = tf.constant(0.0, dtype=tf.float32)
     output = layer((tf.zeros([2, 65, 65, 32]),
-                    float_training_tensor))[0]
+                    float_training_tensor))
     self.assertListEqual(output.get_shape().as_list(), [2, 65, 65, 256])
 
   def test_axial_block_correct_output_shape(self):
@@ -47,7 +47,7 @@ class AxialBlocksTest(tf.test.TestCase):
         attention_type='axial')
     float_training_tensor = tf.constant(0.0, dtype=tf.float32)
     output = layer((tf.zeros([2, 65, 65, 32]),
-                    float_training_tensor))[1]
+                    float_training_tensor))
     self.assertListEqual(output.get_shape().as_list(), [2, 33, 33, 256])
 
 if __name__ == '__main__':
