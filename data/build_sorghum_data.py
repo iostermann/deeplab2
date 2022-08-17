@@ -50,6 +50,7 @@ flags.DEFINE_string('output_dir', None,
 #                     'Whether to apply ignore labels to crowd pixels in '
 #                     'panoptic label.')
 
+#_NUM_SHARDS = 50
 _NUM_SHARDS = 10
 #_NUM_SHARDS = 2
 
@@ -365,6 +366,7 @@ def main(unused_argv: Sequence[str]) -> None:
     tf.io.gfile.makedirs(FLAGS.output_dir)
 
     for dataset_split in ('train', 'val', 'test'):
+    #for dataset_split in ('val', 'test'):
         global _IMAGE_COUNTER
         _IMAGE_COUNTER = 0
         logging.info('Starts processing dataset split %s.', dataset_split)

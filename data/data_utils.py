@@ -46,8 +46,20 @@ def read_image(image_data):
     # capture and ignore this bug:
     # https://github.com/python-pillow/Pillow/issues/3973
     pass
+    '''
+  # Pad to square then resize to 512,512
+  width, height = image.size
+  if width > height:
+      padded = Image.new(image.mode, (width, width), (255, 255, 255))
+      padded.paste(image, (0, (width - height) // 2))
+      image = padded
+  elif height > width:
+      padded = Image.new(image.mode, (height, height), (255, 255, 255))
+      padded.paste(image, ((height - width) // 2, 0))
+      image = padded
 
-  image = image.resize((256, 256), resample=PIL.Image.LANCZOS)
+  image = image.resize((512, 512), resample=PIL.Image.LANCZOS)
+  '''
   return image
 
 def read_mask(image_data):
@@ -68,7 +80,21 @@ def read_mask(image_data):
     # https://github.com/python-pillow/Pillow/issues/3973
     pass
 
-  image = image.resize((256, 256), resample=PIL.Image.NEAREST)
+    # PUT BOTH COMMENTED REGIONS BACK IN WHEN I'M DONE
+    ''' 
+    # Pad to square then resize to 512,512
+    width, height = image.size
+    if width > height:
+        padded = Image.new(image.mode, (width, width), (255, 255, 255))
+        padded.paste(image, (0, (width - height) // 2))
+        image = padded
+    elif height > width:
+        padded = Image.new(image.mode, (height, height), (255, 255, 255))
+        padded.paste(image, ((height - width) // 2, 0))
+        image = padded
+
+  image = image.resize((512, 512), resample=PIL.Image.NEAREST)
+  '''
   return image
 
 
